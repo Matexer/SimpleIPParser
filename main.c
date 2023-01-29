@@ -34,15 +34,15 @@ bool areArgumentsSufficient(int argc, char *argv[]) {
     const char* outputFilePath = argv[2];
 
     if (argc > 3) {
-        printf("Too many input arguments."
-               "A proper call looks like: './%s <inputFilePath> <outputFilePath>'"
+        printf("Too many input arguments.\n"
+               "A proper call looks like: '%s <inputFilePath> <outputFilePath>'\n"
                "Operation aborted.\n", programName);
         return false;
     }
 
     if (argc < 3) {
         printf("Too little input arguments.\n"
-               "A proper call looks like: './%s <inputFilePath> <outputFilePath>\n'"
+               "A proper call looks like: '%s <inputFilePath> <outputFilePath>'\n"
                "Operation aborted.\n", programName);
         return false;
     }

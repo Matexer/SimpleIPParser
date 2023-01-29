@@ -31,8 +31,6 @@ bool doesFileExists(stringP filePath) {
 void saveToFile(stringP filePath, struct ConvertOutput *output) {
     FILE* fp = fopen(filePath, "w");
 
-    printf("Printing %i hosts and %i networks", output->hosts.numOfLines, output->networks.numOfLines);
-
     for (int i = 0; i < output->networks.numOfLines; i++) {
         fprintf(fp, "network %s,\n", output->networks.linePointers[i]);
     }
@@ -55,8 +53,21 @@ struct Lines loadFile(stringP filePath) {
     char* line = NULL;
     FILE* fp = fopen(filePath, "r");
     while ((numOfChars = getline(&line, &len, fp)) != -1) {
-        if (line[numOfChars-1] == '\n')
+        if (line[numOfChars-1] == '\n') {
             numOfChars--;
+        }
+
+        if (numOfChars < 1) {
+            fileInfo.numOfLines--;
+            continue;
+        }
+
+        if (numOfChars < 7) {
+            printf("Skipping invalid IP: %s", line);
+            fileInfo.numOfLines--;
+            continue;
+        }
+
         memcpy(lines[lineNumber], line, numOfChars);
         lines[lineNumber][numOfChars] = '\0';
         lineNumber++;

@@ -137,7 +137,7 @@ inline bool hasValidSubnet(stringP line, uint index) {
     }
 
     if (parsedInt > 32 || parsedInt < 0) {
-        printf("Skipping subnet with inproper value: %s", line);
+        printf("Skipping subnet with inproper value: %s\n", line);
         return false;
     }
 
