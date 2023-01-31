@@ -1,8 +1,10 @@
 #ifndef FILEMANAGEMENT_H
 #define FILEMANAGEMENT_H
 
+
+#include "consts.h"
 #include "structs.h"
-#include "utils.h"
+#include "memoryUtils.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,84 +14,80 @@
 #include <malloc.h>
 
 
-bool doesFileExists(stringP filePath);
-struct Lines loadFile(stringP filePath);
-struct FileInfo getFileInfo(stringP filePath);
-void saveToFile(stringP filePath, struct ConvertOutput *output);
+struct FileInfo getFileInfo(const char* filePath);
 
 
-bool doesFileExists(stringP filePath) {
-    if (access(filePath, F_OK) == 0) {
-        return true;
-    }
-    else {
-        return false;
-    }
+bool doesFileExists(const char* filePath) {
+    return (access(filePath, F_OK) == 0);
 }
 
 
-void saveToFile(stringP filePath, struct ConvertOutput *output) {
+void saveToFile(const char* filePath, const struct ParseOutput *output) {
     FILE* fp = fopen(filePath, "w");
 
-    for (int i = 0; i < output->networks.numOfLines; i++) {
-        fprintf(fp, "network %s,\n", output->networks.linePointers[i]);
+    for (int i = 0; i < output->subnets.numOfLines; i++) {
+        fprintf(fp, "network %s,\n", output->subnets.lines[i]);
     }
 
     for (int i = 0; i < output->hosts.numOfLines; i++) {
-        fprintf(fp, "host %s,\n", output->hosts.linePointers[i]);
+        fprintf(fp, "host %s,\n", output->hosts.lines[i]);
     }
 
     fclose(fp);
 }
 
 
-struct Lines loadFile(stringP filePath) {
+struct RawLines getDataFromFile(const char* filePath) {
     struct FileInfo fileInfo = getFileInfo(filePath);
-    char** lines = getCharTable(fileInfo.numOfLines, BYTES_PER_LINE);
 
+    char** lines = getCharTable(fileInfo.numOfLines, CHARS_PER_LINE);
+    char* lineBuffer = malloc(CHARS_PER_LINE + 1); //+1 for \n
+
+    ssize_t lineLength;
+    size_t lineSize = CHARS_PER_LINE + 1; //+1 for \n
     uint lineNumber = 0;
-    size_t len = 0;
-    ssize_t numOfChars;
-    char* line = NULL;
+
     FILE* fp = fopen(filePath, "r");
-    while ((numOfChars = getline(&line, &len, fp)) != -1) {
-        if (line[numOfChars-1] == '\n') {
-            numOfChars--;
+
+    while ((lineLength = getline(&lineBuffer, &lineSize, fp)) != -1) {
+        //Too many chars for valid ip/network
+        if (lineLength > CHARS_PER_LINE) {
+            fileInfo.numOfLines--;
+            printf("Skipping invalid line: %s", lineBuffer);
+            continue;
         }
 
-        if (numOfChars < 1) {
+        if (lineBuffer[lineLength-1] == '\n') {
+            lineLength--;
+        }
+
+        //Blank line. Silent skip.
+        if (lineLength < 1) {
             fileInfo.numOfLines--;
             continue;
         }
 
-        if (numOfChars < 7) {
-            printf("Skipping invalid IP: %s", line);
-            fileInfo.numOfLines--;
-            continue;
-        }
-
-        memcpy(lines[lineNumber], line, numOfChars);
-        lines[lineNumber][numOfChars] = '\0';
+        memcpy(lines[lineNumber], lineBuffer, lineLength);
+        lines[lineNumber][lineLength] = '\0';
         lineNumber++;
     }
 
+    free(lineBuffer);
+    lineBuffer = NULL;
+
     fclose(fp);
 
-    if (line) {
-        free(line);
-    }
+    struct RawLines rawLines = {lines, fileInfo};
 
-    struct Lines linesOutput = {lines, fileInfo};
-
-    return linesOutput;
+    return rawLines;
 }
 
 
-struct FileInfo getFileInfo(stringP filePath) {
+struct FileInfo getFileInfo(const char* filePath) {
     FILE* fp = fopen(filePath, "r");
     struct FileInfo fileInfo;
 
-    int ch = 0;
+    char ch = 0;
     fileInfo.numOfLines = 0;
     fileInfo.numOfNetworks = 0;
 

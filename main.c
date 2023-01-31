@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "fileManagement.h"
 #include "structs.h"
-#include "Converting.h"
+#include "parsing.h"
 
 
 bool areArgumentsSufficient(int argc, char *argv[]);
@@ -13,17 +13,18 @@ int main(int argc, char *argv[])
     const char* outputFilePath = argv[2];
 
     if(!areArgumentsSufficient(argc, argv)) {
-        return 0;
+        return 1;
     }
 
-    struct Lines inputLines = loadFile(inputFilePath);
-    struct ConvertOutput output = parse(&inputLines);
+    struct RawLines inputLines = getDataFromFile(inputFilePath);
+    struct ParseOutput parseOutput = parse(&inputLines);
 
-    saveToFile(outputFilePath, &output);
+    saveToFile(outputFilePath, &parseOutput);
 
-    free(output.hosts.linePointers);
-    free(output.networks.linePointers);
+    free(parseOutput.hosts.lines);
+    free(parseOutput.subnets.lines);
     free(inputLines.lines);
+
     return 0;
 }
 
@@ -33,17 +34,17 @@ bool areArgumentsSufficient(int argc, char *argv[]) {
     const char* inputFilePath = argv[1];
     const char* outputFilePath = argv[2];
 
-    if (argc > 3) {
-        printf("Too many input arguments.\n"
-               "A proper call looks like: '%s <inputFilePath> <outputFilePath>'\n"
-               "Operation aborted.\n", programName);
-        return false;
-    }
+    if (argc != 3) {
+        if (argc > 3) {
+            printf("Too many input arguments.\n");
+        }
+        else if (argc < 3) {
+            printf("Too little input arguments.\n");
+        }
 
-    if (argc < 3) {
-        printf("Too little input arguments.\n"
-               "A proper call looks like: '%s <inputFilePath> <outputFilePath>'\n"
+        printf("A proper call looks like: '%s <inputFilePath> <outputFilePath>'\n"
                "Operation aborted.\n", programName);
+
         return false;
     }
 
@@ -53,9 +54,11 @@ bool areArgumentsSufficient(int argc, char *argv[]) {
     }
 
     if(doesFileExists(outputFilePath)) {
-        printf("Output file already exist. Operation aborted.\n");
+        printf("Output file already exists. Operation aborted.\n");
         return false;
     }
 
     return true;
 }
+
+

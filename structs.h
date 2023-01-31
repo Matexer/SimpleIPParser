@@ -2,33 +2,30 @@
 #define STRUCTS_H
 
 #include <stdint.h>
-
-#define BYTES_PER_LINE 20
-
-typedef char* stringP;
+#include <sys/types.h>
 
 
 struct FileInfo {
-    uint32_t numOfLines;
-    uint32_t numOfNetworks;
+    uint numOfLines;
+    uint numOfNetworks;
 };
 
 
-struct Lines {
+struct RawLines {
     char** lines;
     struct FileInfo fileInfo;
 };
 
 
 struct ParsedLines {
-    char** linePointers;
-    uint32_t numOfLines;
+    char** lines;
+    uint numOfLines;
 };
 
 
-struct ConvertOutput {
+struct ParseOutput {
     struct ParsedLines hosts;
-    struct ParsedLines networks;
+    struct ParsedLines subnets;
 };
 
 
